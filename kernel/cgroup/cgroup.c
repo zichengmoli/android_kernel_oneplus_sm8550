@@ -4103,9 +4103,18 @@ static int cgroup_add_file(struct cgroup_subsys_state *css, struct cgroup *cgrp,
 		spin_unlock_irq(&cgroup_file_kn_lock);
 	}
 
+	/* * === 手动添加的补丁代码开始 === 
+	 * 这段代码用于创建兼容性链接（例如让 cpu.shares 指向 shares），
+	 * 这对 Docker 在 Android 上的兼容性非常重要。
+	 */
+	if (cft->ss && (cgrp->root->flags & CGRP_ROOT_NOPREFIX) && !(cft->flags & CFTYPE_NO_PREFIX)) {
+		snprintf(name, CGROUP_FILE_NAME_MAX, "%s.%s", cft->ss->name, cft->name);
+		kernfs_create_link(cgrp->kn, name, kn);
+	}
+	/* === 手动添加的补丁代码结束 === */
+
 	return 0;
 }
-
 /**
  * cgroup_addrm_files - add or remove files to a cgroup directory
  * @css: the target css
