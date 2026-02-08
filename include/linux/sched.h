@@ -1074,8 +1074,8 @@ struct task_struct {
 	struct nameidata		*nameidata;
 
 #ifdef CONFIG_SYSVIPC
-	struct sysv_sem			sysvsem;
-	struct sysv_shm			sysvshm;
+	// struct sysv_sem			sysvsem;
+	// struct sysv_shm			sysvshm;
 #endif
 #ifdef CONFIG_DETECT_HUNG_TASK
 	unsigned long			last_switch_count;
@@ -1508,9 +1508,20 @@ struct task_struct {
 	struct callback_head		l1d_flush_kill;
 #endif
 
+	#if defined(CONFIG_SYSVIPC)
+	/* 1. 复用保留位 1 给信号量 (占用 8字节) */
+	ANDROID_KABI_USE(1, struct sysv_sem sysvsem);
+
+	/* 2. 复用保留位 2 和 3 给共享内存 (占用 16字节) */
+	/* 注意：这里使用 _ANDROID_KABI_REPLACE 来合并两个保留位 */
+	_ANDROID_KABI_REPLACE(ANDROID_KABI_RESERVE(2); ANDROID_KABI_RESERVE(3),
+			      struct sysv_shm sysvshm);
+#else
+	/* 3. 如果没开 Docker，保持原样作为填充 */
 	ANDROID_KABI_RESERVE(1);
 	ANDROID_KABI_RESERVE(2);
 	ANDROID_KABI_RESERVE(3);
+#endif
 	ANDROID_KABI_RESERVE(4);
 	ANDROID_KABI_RESERVE(5);
 	ANDROID_KABI_RESERVE(6);
